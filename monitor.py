@@ -166,12 +166,12 @@ def fmt_time(ms):
 def position_summary(positions, account_value):
     if not positions:
         return "현재 오픈 포지션 없음"
-    lines = [f"계좌 가치  {fmt_usd(account_value)}", ""]
+    lines = [f"<b>계좌 가치</b>  {fmt_usd(account_value)}", ""]
     for coin, p in sorted(positions.items()):
         pnl = p["unrealizedPnl"]
         pnl_str = f"{'+' if pnl >= 0 else '-'}{fmt_usd(pnl)}"
         lines.append(f"<b>{coin} {side_kr(p['szi'])}</b>  {fmt_num(abs(p['szi']))}개 @ {fmt_num(p['entryPx'])}")
-        lines.append(f"  규모 {fmt_usd(p['positionValue'])} · {p['leverage']}x · 평가손익 {pnl_str}")
+        lines.append(f"  <b>규모</b> {fmt_usd(p['positionValue'])} · {p['leverage']}x · <b>평가손익</b> {pnl_str}")
     return "\n".join(lines)
 
 
@@ -180,12 +180,12 @@ def diff_positions(old, new):
     events = []
     for coin, p in new.items():
         if coin not in old:
-            liq = f"\n청산가 {fmt_num(p['liqPx'])}" if p['liqPx'] else ""
+            liq = f"\n<b>청산가</b> {fmt_num(p['liqPx'])}" if p['liqPx'] else ""
             events.append(
                 f"<b>[신규 진입] {coin} {side_kr(p['szi'])}</b>\n"
                 f"{fmt_num(abs(p['szi']))}개 @ {fmt_num(p['entryPx'])}\n"
-                f"규모 {fmt_usd(p['positionValue'])}\n"
-                f"레버리지 {p['leverage']}x{liq}"
+                f"<b>규모</b> {fmt_usd(p['positionValue'])}\n"
+                f"<b>레버리지</b> {p['leverage']}x{liq}"
             )
         elif (old[coin]["szi"] > 0) != (p["szi"] > 0):
             events.append(
@@ -241,10 +241,10 @@ def summarize_fills(fills, min_notional):
         line = (
             f"<b>[체결] {coin} {DIR_KR.get(direction, direction)}</b>\n"
             f"{fmt_num(g['sz'])}개 @ 평균 {fmt_num(avg_px)}\n"
-            f"규모 {fmt_usd(g['notional'])} · {g['n']}건 · {when}"
+            f"<b>규모</b> {fmt_usd(g['notional'])} · {g['n']}건 · {when}"
         )
         if abs(g["pnl"]) > 0.01:
-            line += f"\n실현손익 {'+' if g['pnl'] >= 0 else '-'}{fmt_usd(g['pnl'])}"
+            line += f"\n<b>실현손익</b> {'+' if g['pnl'] >= 0 else '-'}{fmt_usd(g['pnl'])}"
         lines.append(line)
     return lines, max_time
 
