@@ -180,11 +180,12 @@ def diff_positions(old, new):
     events = []
     for coin, p in new.items():
         if coin not in old:
-            liq = f" · 청산가 {fmt_num(p['liqPx'])}" if p['liqPx'] else ""
+            liq = f"\n청산가 {fmt_num(p['liqPx'])}" if p['liqPx'] else ""
             events.append(
                 f"<b>[신규 진입] {coin} {side_kr(p['szi'])}</b>\n"
                 f"{fmt_num(abs(p['szi']))}개 @ {fmt_num(p['entryPx'])}\n"
-                f"규모 {fmt_usd(p['positionValue'])} · {p['leverage']}x{liq}"
+                f"규모 {fmt_usd(p['positionValue'])}\n"
+                f"레버리지 {p['leverage']}x{liq}"
             )
         elif (old[coin]["szi"] > 0) != (p["szi"] > 0):
             events.append(
