@@ -1,0 +1,5 @@
+{
+  "address": "0x0ddf9bae2af4b874b96d287a5ad42eb47138a902",
+  "poll_interval_sec": 60,
+  "min_fill_notional_usd": 10000
+}
