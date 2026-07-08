@@ -156,24 +156,22 @@ def fmt_num(v):
 
 
 def side_kr(szi):
-    return "롱 📈" if szi > 0 else "숏 📉"
+    return "롱" if szi > 0 else "숏"
 
 
 def fmt_time(ms):
-    return datetime.fromtimestamp(ms / 1000, KST).strftime("%m/%d %H:%M:%S")
+    return datetime.fromtimestamp(ms / 1000, KST).strftime("%m/%d %H:%M")
 
 
 def position_summary(positions, account_value):
     if not positions:
         return "현재 오픈 포지션 없음"
-    lines = [f"계좌 가치: {fmt_usd(account_value)}"]
+    lines = [f"계좌 가치  {fmt_usd(account_value)}", ""]
     for coin, p in sorted(positions.items()):
         pnl = p["unrealizedPnl"]
         pnl_str = f"{'+' if pnl >= 0 else '-'}{fmt_usd(pnl)}"
-        lines.append(
-            f"• {coin} {side_kr(p['szi'])} {fmt_num(abs(p['szi']))} @ {fmt_num(p['entryPx'])}"
-            f" ({fmt_usd(p['positionValue'])}, {p['leverage']}x, PnL {pnl_str})"
-        )
+        lines.append(f"<b>{coin} {side_kr(p['szi'])}</b>  {fmt_num(abs(p['szi']))}개 @ {fmt_num(p['entryPx'])}")
+        lines.append(f"  규모 {fmt_usd(p['positionValue'])} · {p['leverage']}x · 평가손익 {pnl_str}")
     return "\n".join(lines)
 
 
@@ -182,23 +180,22 @@ def diff_positions(old, new):
     events = []
     for coin, p in new.items():
         if coin not in old:
+            liq = f" · 청산가 {fmt_num(p['liqPx'])}" if p['liqPx'] else ""
             events.append(
-                f"🆕 <b>신규 포지션 진입</b>\n"
-                f"{coin} {side_kr(p['szi'])} {fmt_num(abs(p['szi']))} @ {fmt_num(p['entryPx'])}\n"
-                f"규모 {fmt_usd(p['positionValue'])} / 레버리지 {p['leverage']}x"
-                + (f" / 청산가 {fmt_num(p['liqPx'])}" if p['liqPx'] else "")
+                f"<b>[신규 진입] {coin} {side_kr(p['szi'])}</b>\n"
+                f"{fmt_num(abs(p['szi']))}개 @ {fmt_num(p['entryPx'])}\n"
+                f"규모 {fmt_usd(p['positionValue'])} · {p['leverage']}x{liq}"
             )
         elif (old[coin]["szi"] > 0) != (p["szi"] > 0):
             events.append(
-                f"🔄 <b>포지션 방향 전환</b>\n"
-                f"{coin}: {side_kr(old[coin]['szi'])} → {side_kr(p['szi'])}\n"
-                f"현재 {fmt_num(abs(p['szi']))} @ {fmt_num(p['entryPx'])} ({fmt_usd(p['positionValue'])})"
+                f"<b>[방향 전환] {coin}  {side_kr(old[coin]['szi'])} → {side_kr(p['szi'])}</b>\n"
+                f"현재 {fmt_num(abs(p['szi']))}개 @ {fmt_num(p['entryPx'])} · {fmt_usd(p['positionValue'])}"
             )
     for coin, p in old.items():
         if coin not in new:
             events.append(
-                f"✅ <b>포지션 전량 청산</b>\n"
-                f"{coin} {side_kr(p['szi'])} {fmt_num(abs(p['szi']))} 종료"
+                f"<b>[전량 청산] {coin} {side_kr(p['szi'])}</b>\n"
+                f"{fmt_num(abs(p['szi']))}개 포지션 종료"
             )
     return events
 
@@ -237,10 +234,13 @@ def summarize_fills(fills, min_notional):
         if g["notional"] < min_notional:
             continue
         avg_px = g["notional"] / g["sz"] if g["sz"] else 0
+        when = fmt_time(g["first"])
+        if g["last"] != g["first"]:
+            when += f" ~ {fmt_time(g['last'])[-5:]}"
         line = (
-            f"⚡ <b>{coin} {DIR_KR.get(direction, direction)}</b>\n"
-            f"수량 {fmt_num(g['sz'])} / 평균가 {fmt_num(avg_px)} / 규모 {fmt_usd(g['notional'])}"
-            f"\n체결 {g['n']}건 ({fmt_time(g['first'])} ~ {fmt_time(g['last'])})"
+            f"<b>[체결] {coin} {DIR_KR.get(direction, direction)}</b>\n"
+            f"{fmt_num(g['sz'])}개 @ 평균 {fmt_num(avg_px)}\n"
+            f"규모 {fmt_usd(g['notional'])} · {g['n']}건 · {when}"
         )
         if abs(g["pnl"]) > 0.01:
             line += f"\n실현손익 {'+' if g['pnl'] >= 0 else '-'}{fmt_usd(g['pnl'])}"
@@ -268,7 +268,7 @@ def summarize_ledger(updates, last_time):
         kind = delta.get("type", "?")
         usdc = delta.get("usdc") or delta.get("amount") or ""
         amount = f" {fmt_usd(float(usdc))}" if usdc else ""
-        lines.append(f"💰 <b>{LEDGER_KR.get(kind, kind)}</b>{amount} ({fmt_time(t)})")
+        lines.append(f"<b>[{LEDGER_KR.get(kind, kind)}]</b>{amount} · {fmt_time(t)}")
     return lines, max_time
 
 
@@ -306,8 +306,8 @@ def main():
         }
         save_state(state)
         tg.send(
-            f"🐋 <b>고래 지갑 모니터링 시작</b>\n"
-            f"주소: <code>{short_addr}</code>\n\n"
+            f"<b>고래 모니터링 시작</b>  <code>{short_addr}</code>\n"
+            f"────────────────\n"
             f"{position_summary(positions, account_value)}\n\n"
             f'<a href="{hyperdash_url}">Hyperdash에서 보기</a>'
         )
@@ -338,7 +338,9 @@ def main():
             if messages:
                 body = "\n\n".join(messages)
                 tg.send(
-                    f"🐋 <b>고래 활동 감지</b> <code>{short_addr}</code>\n\n{body}\n\n"
+                    f"<b>고래 활동 감지</b>  <code>{short_addr}</code>\n"
+                    f"────────────────\n"
+                    f"{body}\n\n"
                     f'<a href="{hyperdash_url}">Hyperdash에서 보기</a>'
                 )
                 log(f"이벤트 {len(messages)}건 알림")
