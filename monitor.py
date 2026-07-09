@@ -155,6 +155,23 @@ def fmt_num(v):
     return f"{v:,.4f}".rstrip("0").rstrip(".")
 
 
+def fmt_px(v):
+    """가격: 10달러 이상이면 소수점 절삭"""
+    return f"{int(v):,}" if v >= 10 else fmt_num(v)
+
+
+def fmt_qty(v):
+    """수량: 큰 수는 K/M으로 축약, 소수점 절삭"""
+    v = abs(v)
+    if v >= 1_000_000:
+        return f"{v/1_000_000:.2f}M"
+    if v >= 10_000:
+        return f"{v/1_000:.1f}K"
+    if v >= 1:
+        return f"{int(v):,}"
+    return fmt_num(v)
+
+
 def side_kr(szi):
     return "롱" if szi > 0 else "숏"
 
@@ -166,12 +183,12 @@ def fmt_time(ms):
 def position_summary(positions, account_value):
     if not positions:
         return "현재 오픈 포지션 없음"
-    lines = [f"<b>계좌 가치</b>  {fmt_usd(account_value)}", ""]
+    lines = [f"<b>계좌 가치</b> ▶ {fmt_usd(account_value)}", ""]
     for coin, p in sorted(positions.items()):
         pnl = p["unrealizedPnl"]
         pnl_str = f"{'+' if pnl >= 0 else '-'}{fmt_usd(pnl)}"
-        lines.append(f"<b>{coin} {side_kr(p['szi'])}</b>  {fmt_num(abs(p['szi']))}개 @ {fmt_num(p['entryPx'])}")
-        lines.append(f"  <b>규모</b> {fmt_usd(p['positionValue'])} · {p['leverage']}x · <b>평가손익</b> {pnl_str}")
+        lines.append(f"<b>{coin} {side_kr(p['szi'])}</b>  {fmt_qty(p['szi'])}개 @ {fmt_px(p['entryPx'])}달러")
+        lines.append(f"  <b>규모</b> ▶ {fmt_usd(p['positionValue'])} · {p['leverage']}x · <b>평가손익</b> ▶ {pnl_str}")
     return "\n".join(lines)
 
 
@@ -180,23 +197,25 @@ def diff_positions(old, new):
     events = []
     for coin, p in new.items():
         if coin not in old:
-            liq = f"\n<b>청산가</b> {fmt_num(p['liqPx'])}" if p['liqPx'] else ""
+            liq = f"\n<b>청산가</b> ▶ {fmt_px(p['liqPx'])}달러" if p['liqPx'] else ""
             events.append(
                 f"<b>[신규 진입] {coin} {side_kr(p['szi'])}</b>\n"
-                f"{fmt_num(abs(p['szi']))}개 @ {fmt_num(p['entryPx'])}\n"
-                f"<b>규모</b> {fmt_usd(p['positionValue'])}\n"
-                f"<b>레버리지</b> {p['leverage']}x{liq}"
+                f"<b>수량</b> ▶ {fmt_qty(p['szi'])}개\n"
+                f"<b>진입가</b> ▶ {fmt_px(p['entryPx'])}달러\n"
+                f"<b>규모</b> ▶ {fmt_usd(p['positionValue'])}\n"
+                f"<b>레버리지</b> ▶ {p['leverage']}x{liq}"
             )
         elif (old[coin]["szi"] > 0) != (p["szi"] > 0):
             events.append(
                 f"<b>[방향 전환] {coin}  {side_kr(old[coin]['szi'])} → {side_kr(p['szi'])}</b>\n"
-                f"현재 {fmt_num(abs(p['szi']))}개 @ {fmt_num(p['entryPx'])} · {fmt_usd(p['positionValue'])}"
+                f"<b>수량</b> ▶ {fmt_qty(p['szi'])}개 @ {fmt_px(p['entryPx'])}달러\n"
+                f"<b>규모</b> ▶ {fmt_usd(p['positionValue'])}"
             )
     for coin, p in old.items():
         if coin not in new:
             events.append(
                 f"<b>[전량 청산] {coin} {side_kr(p['szi'])}</b>\n"
-                f"{fmt_num(abs(p['szi']))}개 포지션 종료"
+                f"<b>수량</b> ▶ {fmt_qty(p['szi'])}개 포지션 종료"
             )
     return events
 
@@ -240,11 +259,12 @@ def summarize_fills(fills, min_notional):
             when += f" ~ {fmt_time(g['last'])[-5:]}"
         line = (
             f"<b>[체결] {coin} {DIR_KR.get(direction, direction)}</b>\n"
-            f"{fmt_num(g['sz'])}개 @ 평균 {fmt_num(avg_px)}\n"
-            f"<b>규모</b> {fmt_usd(g['notional'])} · {g['n']}건 · {when}"
+            f"<b>수량</b> ▶ {fmt_qty(g['sz'])}개\n"
+            f"<b>평단가</b> ▶ {fmt_px(avg_px)}달러\n"
+            f"<b>규모</b> ▶ {fmt_usd(g['notional'])} · {g['n']}건 · {when}"
         )
         if abs(g["pnl"]) > 0.01:
-            line += f"\n<b>실현손익</b> {'+' if g['pnl'] >= 0 else '-'}{fmt_usd(g['pnl'])}"
+            line += f"\n<b>실현손익</b> ▶ {'+' if g['pnl'] >= 0 else '-'}{fmt_usd(g['pnl'])}"
         lines.append(line)
     return lines, max_time
 
@@ -268,7 +288,7 @@ def summarize_ledger(updates, last_time):
         delta = u.get("delta", {})
         kind = delta.get("type", "?")
         usdc = delta.get("usdc") or delta.get("amount") or ""
-        amount = f" {fmt_usd(float(usdc))}" if usdc else ""
+        amount = f" ▶ {fmt_usd(float(usdc))}" if usdc else ""
         lines.append(f"<b>[{LEDGER_KR.get(kind, kind)}]</b>{amount} · {fmt_time(t)}")
     return lines, max_time
 
