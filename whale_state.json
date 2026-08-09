@@ -3,10 +3,10 @@
     "ETH": {
       "szi": -50000.0,
       "entryPx": 1700.06,
-      "positionValue": 95975000.0,
+      "positionValue": 95955500.0,
       "leverage": 3,
-      "unrealizedPnl": -10971650.845643,
-      "liqPx": 2186.1886606502
+      "unrealizedPnl": -10952150.845643,
+      "liqPx": 2186.2118814273
     }
   },
   "last_fill_time": 1782445583686,
