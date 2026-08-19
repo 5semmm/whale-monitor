@@ -1,14 +1,5 @@
 {
-  "positions": {
-    "ETH": {
-      "szi": -50000.0,
-      "entryPx": 1700.06,
-      "positionValue": 105720000.0,
-      "leverage": 3,
-      "unrealizedPnl": -20716650.845643,
-      "liqPx": 2189.9313750891
-    }
-  },
-  "last_fill_time": 1782445583686,
-  "last_ledger_time": 1783496925257
+  "positions": {},
+  "last_fill_time": 1787172675479,
+  "last_ledger_time": 1787172675479
 }
